@@ -1,0 +1,14 @@
+{
+  "DB": {
+    "host": "localhost",
+    "port": 49153,
+    "dbName": "WebExtractor",
+    "save_whole_tag": false
+  },
+  "RabbitMQ": {
+    "host": "localhost",
+    "port": 5672,
+    "queueName": "extractionRecords"
+  },
+  "standalone": true
+}

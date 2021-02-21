@@ -1,9 +1,10 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express')
+const router = express.Router()
+const TaskRouter = require('./TaskRouter')
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
+/* ROOT Router index */
 
-module.exports = router;
+router.use('/task/', TaskRouter)
+
+
+module.exports = router
