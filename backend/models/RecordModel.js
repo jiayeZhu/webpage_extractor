@@ -12,6 +12,9 @@ const RecordSchema = new Schema({
     required: true
   },
 
+  // webpage title
+  title: {type: String},
+
   // extraction rules
   // rules: [Object],
 

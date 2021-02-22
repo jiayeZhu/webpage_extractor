@@ -1,6 +1,7 @@
 const express = require('express')
 const TaskRouter = express.Router()
 const { TaskService, RecordService } = require('../services')
+const { TaskModel } = require('../models')
 const config = require('config')
 const { body, validationResult } = require('express-validator')
 
@@ -22,7 +23,8 @@ TaskRouter.post(
       urls.forEach(url => {
         promises.push(RecordService.createRecords(url, _id, rules))
       })
-      await Promise.all(promises)
+      let recordIds = await Promise.all(promises)
+      await TaskModel.findByIdAndUpdate(_id, { records: recordIds })
       return res.status(201).json({ _id })
     } catch (error) {
       return res.sendStatus(500)

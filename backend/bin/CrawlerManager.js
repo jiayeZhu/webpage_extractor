@@ -18,13 +18,25 @@ const start = () => {
     // console.log({ recordId, url, rules })
     let crawlerResult = new Array(rules.length)
     let promises = []
+    promises.push(new Promise(async (resolve, reject) => {
+      let title = (await CrawlerService.retrieveBySelector(url, ['head>title']))['head>title'][0]
+      try {
+        await RecordModel.findByIdAndUpdate(recordId, { title })
+        resolve()
+      } catch (error) {
+        RecordModel.findByIdAndUpdate(recordId, { status:3 }).catch(console.error) // 3 means internal error
+        // console.error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`)
+        reject(new Error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`))
+      }
+      
+    }))
     rules.forEach(async (rule, idx) => {
-      let p = new Promise(async (resolve, reject)=>{
+      let p = new Promise(async (resolve, reject) => {
         let parseResult = ruleParser(rule)
-        if(parseResult === false) {
+        if (parseResult === false) {
           // modify status to USER ERROR
           try {
-            await RecordModel.findByIdAndUpdate(recordId,{status: 4}) //4 means failed to parse rules
+            await RecordModel.findByIdAndUpdate(recordId, { status: 4 }) //4 means failed to parse rules
           } catch (error) {
             console.error(`failed to modify record: ${recordId} status to 4. with error: ${error.message}`)
           }
@@ -38,10 +50,11 @@ const start = () => {
       })
       promises.push(p)
     })
-    await Promise.all(promises)
-    // update results to db
+    
     try {
-      await RecordModel.findByIdAndUpdate(recordId,{status: 2, result:crawlerResult})
+      // update results to db
+      await Promise.all(promises)
+      await RecordModel.findByIdAndUpdate(recordId, { status: 2, result: crawlerResult })
     } catch (error) {
       console.error(`failed to update results of record: ${recordId} with error: ${error.message}`)
       RecordModel.findByIdAndUpdate(recordId, { status: 3 }).catch(err => {
@@ -76,22 +89,22 @@ const ruleParser = (rule) => {
       return [CrawlerService.countTags, undefined]
     case 'RETRIEVE_HEADER':
       var by = 'tag'
-      if(typeof ruleOption === 'object' && ['tag','id','class'].includes(ruleOption['by'])) by = ruleOption['by']
+      if (typeof ruleOption === 'object' && ['tag', 'id', 'class'].includes(ruleOption['by'])) by = ruleOption['by']
       return [CrawlerService.retrieveHeader, by]
     case 'RETRIEVE_FOOTER':
       var by = 'tag'
-      if(typeof ruleOption === 'object' && ['tag','id','class'].includes(ruleOption['by'])) by = ruleOption['by']
+      if (typeof ruleOption === 'object' && ['tag', 'id', 'class'].includes(ruleOption['by'])) by = ruleOption['by']
       return [CrawlerService.retrieveFooter, by]
     case 'RETRIEVE_BY_ID':
-      var validation = new Validator({ruleOption},{'ruleOption.*':'string'})
+      var validation = new Validator({ ruleOption }, { 'ruleOption.*': 'string' })
       if (validation.fails()) return false
       return [CrawlerService.retrieveById, ruleOption]
     case 'RETRIEVE_BY_CLASS':
-      var validation = new Validator({ruleOption},{'ruleOption.*':'string'})
+      var validation = new Validator({ ruleOption }, { 'ruleOption.*': 'string' })
       if (validation.fails()) return false
       return [CrawlerService.retrieveByClass, ruleOption]
     case 'RETRIEVE_BY_SELECTOR':
-      var validation = new Validator({ruleOption},{'ruleOption.*':'string'})
+      var validation = new Validator({ ruleOption }, { 'ruleOption.*': 'string' })
       if (validation.fails()) return false
       return [CrawlerService.retrieveBySelector, ruleOption]
   }

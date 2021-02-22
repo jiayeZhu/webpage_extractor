@@ -47,6 +47,18 @@ const handleMSG = async ({ recordId, url, rules }) => {
   // console.log({ recordId, url, rules })
   let crawlerResult = new Array(rules.length)
   let promises = []
+  promises.push(new Promise(async (resolve, reject) => {
+    let title = (await CrawlerService.retrieveBySelector(url, ['head>title']))['head>title'][0]
+    try {
+      await RecordModel.findByIdAndUpdate(recordId, { title })
+      resolve()
+    } catch (error) {
+      RecordModel.findByIdAndUpdate(recordId, { status:3 }).catch(console.error) // 3 means internal error
+      // console.error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`)
+      reject(new Error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`))
+    }
+    
+  }))
   rules.forEach(async (rule, idx) => {
     let p = new Promise(async (resolve, reject) => {
       let parseResult = ruleParser(rule)
@@ -67,9 +79,10 @@ const handleMSG = async ({ recordId, url, rules }) => {
     })
     promises.push(p)
   })
-  await Promise.all(promises)
-  // update results to db
+
   try {
+    // update results to db
+    await Promise.all(promises)
     await RecordModel.findByIdAndUpdate(recordId, { status: 2, result: crawlerResult })
     return true
   } catch (error) {
@@ -130,7 +143,6 @@ const main = async () => {
         let success = await handleMSG({ recordId, url, rules })
         if (success) channel.ack(msg)
         else channel.nack(msg)
-        
       } catch (error) {
         console.error(error)
       }
