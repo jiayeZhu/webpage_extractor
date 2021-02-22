@@ -10,6 +10,7 @@ const http = require('http')
 const mongoose = require('mongoose')
 const config = require('config')
 const CrawlerManager = require('./CrawlerManager')
+const { MQService } = require('../services')
 
 /**
  * Get port from environment and store in Express.
@@ -29,9 +30,12 @@ initApp(app)
 /**
  * Init the app. Make sure db is connected before serving
  */
-async function initApp(app){
+async function initApp(app) {
   try {
-    const { host, port, dbName } = config.get('DB')
+    const host = process.env.DB_HOST || config.get('DB').host
+    const port = process.env.DB_PORT || config.get('DB').port
+    const dbName = process.env.DB_NAME || config.get('DB').dbName
+    // const { host, port, dbName } = config.get('DB')
     console.log("==== connecting to DB ====")
     await mongoose.connect(`mongodb://${host}:${port}/${dbName}`, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
     console.log("===== DB connected. =====")
@@ -45,7 +49,29 @@ async function initApp(app){
   /**
    * Listen on record created event if working in standalone mode
    */
-  if(config.get('standalone')) CrawlerManager.start()
+  let standaloneMode = config.get('standalone')
+  if(process.env.STANDALONE_MODE) {
+    switch (process.env.STANDALONE_MODE){
+      case 'true':
+        standaloneMode = true
+        break
+      case 'false':
+        standaloneMode = false
+        break
+    }
+  }
+  if (standaloneMode) CrawlerManager.start()
+  // other wise connect to the RabbitMQ
+  else {
+    try {
+      let { connection, channel } = await MQService.connect()
+    } catch (error) {
+      console.error("==== Failed to connect to RabbitMQ ====")
+      console.error(error.message)
+      console.error("==== shutting down ====")
+      process.exit()
+    }
+  }
 
   /**
    * Listen on provided port, on all network interfaces.

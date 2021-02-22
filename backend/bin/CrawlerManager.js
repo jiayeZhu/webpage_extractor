@@ -7,6 +7,14 @@ const emitter = new EventEmitter()
 
 const start = () => {
   emitter.on('RECORD_CREATED', async ({ recordId, url, rules }) => {
+    try {
+      await RecordModel.findByIdAndUpdate(recordId, { status: 1 })
+    } catch (error) {
+      RecordModel.findByIdAndUpdate(recordId, { status: 3 }).catch(err => {
+        console.error(`failed to set status of record: ${recordId} to 3 with error: ${err.message}`)
+      })
+      return
+    }
     // console.log({ recordId, url, rules })
     let crawlerResult = new Array(rules.length)
     let promises = []
@@ -36,6 +44,9 @@ const start = () => {
       await RecordModel.findByIdAndUpdate(recordId,{status: 2, result:crawlerResult})
     } catch (error) {
       console.error(`failed to update results of record: ${recordId} with error: ${error.message}`)
+      RecordModel.findByIdAndUpdate(recordId, { status: 3 }).catch(err => {
+        console.error(`failed to set status of record: ${recordId} to 3 with error: ${err.message}`)
+      })
     }
   })
   console.log('Standalone mode. Crawler Manager start listening on event RECORD_CREATED')
