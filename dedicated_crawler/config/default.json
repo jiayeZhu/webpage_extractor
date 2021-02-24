@@ -2,8 +2,7 @@
   "DB": {
     "host": "localhost",
     "port": 49153,
-    "dbName": "WebExtractor",
-    "save_whole_tag": false
+    "dbName": "WebExtractor"
   },
   "RabbitMQ": {
     "host": "localhost",

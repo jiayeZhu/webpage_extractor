@@ -172,26 +172,56 @@ export default {
               let parseResult = JSON.parse(value);
               if (
                 !Array.isArray(parseResult) ||
-                parseResult.filter((r) => typeof r === "object").length != parseResult.length
-              ) cb(new Error("Input should be an array of rule objects"));
+                parseResult.filter((r) => typeof r === "object").length !=
+                  parseResult.length
+              )
+                cb(new Error("Input should be an array of rule objects"));
+              else if (parseResult.length === 0)
+                cb(new Error("At least give me one rule, please"));
               else if (
-                parseResult.length === 0
-              ) cb(new Error("At least give me one rule, please"));
+                parseResult.filter((r) => Object.entries(r).length > 1).length >
+                0
+              )
+                cb(new Error("Each rule should only have one entry"));
               else if (
-                parseResult.filter((r) => Object.entries(r).length > 1).length > 0
-              ) cb(new Error("Each rule should only have one entry"));
+                parseResult
+                  .filter(
+                    (r) =>
+                      Object.keys(r)[0] === "RETRIEVE_HEADER" ||
+                      Object.keys(r)[0] === "RETRIEVE_FOOTER"
+                  )
+                  .filter((r) => typeof Object.values(r)[0] === "object")
+                  .filter(
+                    (r) =>
+                      Object.entries(Object.values(r)[0]).length > 1 ||
+                      Object.values(r)[0]["by"] === undefined
+                  ).length > 0
+              )
+                cb(
+                  new Error(
+                    'RETRIEVE_HEADER/FOOTER can only accept an option like {"by": ONE_OF("tag","class","id")}'
+                  )
+                );
               else if (
-                parseResult.filter((r) => Object.keys(r)[0] === 'RETRIEVE_HEADER' || Object.keys(r)[0] === 'RETRIEVE_FOOTER')
-                  .filter(r=>typeof Object.values(r)[0] === 'object')
-                  .filter(r=>Object.entries(Object.values(r)[0]).length>1 || Object.values(r)[0]['by'] === undefined)
-                  .length > 0
-              ) cb(new Error('RETRIEVE_HEADER/FOOTER can only accept an option like {"by": ONE_OF("tag","class","id")}'));
-              else if (
-                parseResult.filter((r) => Object.keys(r)[0] === 'RETRIEVE_HEADER' || Object.keys(r)[0] === 'RETRIEVE_FOOTER')
-                  .filter(r=>typeof Object.values(r)[0] === 'object')
-                  .filter(r=>!['class','tag','id'].includes(Object.values(r)[0]['by']))
-                  .length > 0
-              ) cb(new Error("RETRIEVE_HEADER/FOOTER can only by tag, id, or class"));
+                parseResult
+                  .filter(
+                    (r) =>
+                      Object.keys(r)[0] === "RETRIEVE_HEADER" ||
+                      Object.keys(r)[0] === "RETRIEVE_FOOTER"
+                  )
+                  .filter((r) => typeof Object.values(r)[0] === "object")
+                  .filter(
+                    (r) =>
+                      !["class", "tag", "id"].includes(
+                        Object.values(r)[0]["by"]
+                      )
+                  ).length > 0
+              )
+                cb(
+                  new Error(
+                    "RETRIEVE_HEADER/FOOTER can only by tag, id, or class"
+                  )
+                );
               else cb();
             } catch (error) {
               cb(new Error("Cannot parse rules into JSON"));
@@ -212,14 +242,21 @@ export default {
       this.totalCount = totalCount;
     },
     deleteTask: function (idx, taskId) {
-      this.$alert(`Deleting task: ${this.tableData[idx].name}`, "Delete Task", {
-        confirmButtonText: "Confirm",
-        callback: async () => {
+      this.$confirm(
+        `Deleting task: ${this.tableData[idx].name}`,
+        "Delete Task",
+        {
+          confirmButtonText: "Confirm",
+          cancelButtonText: "Cancel",
+          type: "warning",
+        }
+      )
+        .then(async () => {
           try {
             await this.axios.delete(`/task/${taskId}`);
             this.refreshTable();
             this.$message({
-              type: "info",
+              type: "success",
               message: `Deleted`,
             });
           } catch (error) {
@@ -227,8 +264,13 @@ export default {
               `Failed to delete task ${taskId} with error:${error.message}`
             );
           }
-        },
-      });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "Operation Canceled",
+          });
+        });
     },
     showUrlDetail: function (taskId) {
       this.urlContent = this.tableData.filter((e) => e._id === taskId)[0].urls;

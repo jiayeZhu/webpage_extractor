@@ -32,7 +32,10 @@
           align="center"
         >
           <template slot-scope="scope">
-            <el-button size="small" @click="showResult(scope.row._id)" :disabled='["Failed", "Input Error"].includes(scope.row.status)'
+            <el-button
+              size="small"
+              @click="showResult(scope.row._id)"
+              :disabled="['Failed', 'Input Error'].includes(scope.row.status)"
               >View</el-button
             >
           </template>
@@ -99,20 +102,20 @@ export default {
     },
     refreshTable: async function () {
       const STATUS_MAP = {
-        0: 'Pending',
-        1: 'Working',
-        2: 'Succeeded',
-        3: 'Failed',
-        4: 'Input Error'
-      }
+        0: "Pending",
+        1: "Working",
+        2: "Succeeded",
+        3: "Failed",
+        4: "Input Error",
+      };
       let { records, totalCount } = (
         await this.axios.get(
           `/task/${this.taskId}/record?page=${this.currentPage}`
         )
       ).data;
-      this.tableData = records.map(r=>{
-        r.status = STATUS_MAP[r.status]
-        return r
+      this.tableData = records.map((r) => {
+        r.status = STATUS_MAP[r.status];
+        return r;
       });
       this.totalCount = totalCount;
     },
@@ -121,7 +124,7 @@ export default {
       this.refreshTable();
     },
     showResult: async function (recordId) {
-      this.treeData = []
+      this.treeData = [];
       const VALID_RULES = [
         "COUNT_TAGS",
         "RETRIEVE_HEADER",
@@ -142,51 +145,61 @@ export default {
             let treeNode = {
               label: ruleType,
               children: [],
-            }; 
+            };
             switch (ruleType) {
               case "COUNT_TAGS": {
                 let countResultMap = result[idx];
-                Object.entries(countResultMap).forEach(e=>{
-                  treeNode.children.push({label: e.join(': ')})
+                Object.entries(countResultMap).forEach((e) => {
+                  treeNode.children.push({ label: e.join(": ") });
                 });
-                this.treeData.push(treeNode)
-                break
+                this.treeData.push(treeNode);
+                break;
               }
-              case 'RETRIEVE_HEADER':
-              case 'RETRIEVE_FOOTER':{
-                let option = Object.values(r)[0]
+              case "RETRIEVE_HEADER":
+              case "RETRIEVE_FOOTER": {
+                let option = Object.values(r)[0];
 
-                if( typeof option === 'object' && Object.keys(option).length === 1 && ['class','tag','id'].includes(Object.values(option)[0])){
-                  treeNode.label += `_BY_${Object.values(option)[0]}`
+                if (
+                  typeof option === "object" &&
+                  Object.keys(option).length === 1 &&
+                  ["class", "tag", "id"].includes(Object.values(option)[0])
+                ) {
+                  treeNode.label += `_BY_${Object.values(option)[0]}`;
                 }
-                if (!treeNode.label.includes('_BY_id')){
-                  let retrieveResultArray = result[idx];
-                  retrieveResultArray.forEach(e => {
-                    treeNode.children.push({label: e})
+                if (!treeNode.label.includes("_BY_id")) {
+                  let retrieveResultArray = result[idx].filter(sr=>sr!=='');
+                  retrieveResultArray.forEach((e) => {
+                    treeNode.children.push({ label: e });
                   });
-                  if (retrieveResultArray.length === 0) treeNode.children.push({label: ''})
-                }else{
-                  treeNode.children.push({label: result[idx]})
+                  if (retrieveResultArray.length === 0)
+                    treeNode.children.push({ label: "" });
+                } else {
+                  treeNode.children.push({ label: result[idx] });
                 }
-                this.treeData.push(treeNode)
-                break
+                this.treeData.push(treeNode);
+                break;
               }
-              case "RETRIEVE_BY_ID": 
+              case "RETRIEVE_BY_ID":
               case "RETRIEVE_BY_CLASS":
-              case "RETRIEVE_BY_SELECTOR" :{
-                let targets = Object.values(r)[0]
-                let subResults = result[idx]
-                targets.forEach(t => {
+              case "RETRIEVE_BY_SELECTOR": {
+                let targets = Object.values(r)[0];
+                let subResults = result[idx];
+                targets.forEach((t) => {
                   let subTreeNode = {
                     label: t,
-                    children: []
-                  }
-                  if(ruleType === 'RETRIEVE_BY_ID') subTreeNode.children.push({label: subResults[t]})
-                  else subTreeNode.children = subResults[t].map(sr => ({label: sr}))
-                  treeNode.children.push(subTreeNode)
-                })
-              this.treeData.push(treeNode)
-              break
+                    children: [],
+                  };
+                  if (ruleType === "RETRIEVE_BY_ID")
+                    subTreeNode.children.push({ label: subResults[t] });
+                  else
+                    subTreeNode.children = subResults[t].filter(sr=>sr!=='').map((sr) => ({
+                      label: sr,
+                    }));
+                  if (subTreeNode.children.length == 0) subTreeNode.children.push({ label: "" })
+                  treeNode.children.push(subTreeNode);
+                });
+                this.treeData.push(treeNode);
+                break;
               }
             }
           }
@@ -199,10 +212,17 @@ export default {
         );
       }
     },
-    deleteRecord: async function (idx, recordId){
-      this.$alert(`Deleting Record: ${this.tableData[idx].title}`, "Delete Record", {
-        confirmButtonText: "Confirm",
-        callback: async () => {
+    deleteRecord: async function (idx, recordId) {
+      this.$confirm(
+        `Deleting Record: ${this.tableData[idx].title}`,
+        "Delete Record",
+        {
+          confirmButtonText: "Confirm",
+          cancelButtonText: "Cancel",
+          type: "warning"
+        }
+      )
+        .then(async () => {
           try {
             await this.axios.delete(`/record/${recordId}`);
             this.refreshTable();
@@ -215,9 +235,14 @@ export default {
               `Failed to delete record ${recordId} with error:${error.message}`
             );
           }
-        },
-      });
-    }
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "Operation Canceled",
+          });
+        });
+    },
   },
 };
 </script>
@@ -243,19 +268,19 @@ export default {
   }
 }
 .el-tree-node {
-  .el-tree-node__children{
+  .el-tree-node__children {
     .el-tree-node__content {
-      .is-leaf+.el-tree-node__label {
+      .is-leaf + .el-tree-node__label {
         position: relative;
         &::before {
-          content: ' ';
-            position: absolute;
-            left:-1rem;
-            top: calc(50% - 2px);
-            width: 4px;
-            height: 4px;
-            background-color: black;
-            border-radius: 2px;
+          content: " ";
+          position: absolute;
+          left: -1rem;
+          top: calc(50% - 2px);
+          width: 4px;
+          height: 4px;
+          background-color: black;
+          border-radius: 2px;
         }
       }
     }
