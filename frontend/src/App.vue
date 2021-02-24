@@ -9,9 +9,9 @@
 <script>
 export default {
   name: "app",
-  created: async function () {
-    this.axios.defaults.baseURL = "http://localhost:3000";
-  },
+  // created: async function () {
+  //   this.axios.defaults.baseURL = "http://localhost:3000";
+  // },
   data: () => ({
     show: true,
   }),
