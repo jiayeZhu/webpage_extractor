@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const { String, ObjectId, Number, Boolean } = mongoose.Schema.Types;
+const { String, ObjectId, Number, Boolean } = mongoose.Schema.Types
 
 const TaskSchema = new Schema({
   // task name
@@ -22,12 +22,6 @@ const TaskSchema = new Schema({
     ref: 'Record'
   },
 
-  // record deleted or not
-  deleted: {
-    type: Boolean,
-    default: false,
-    required: true
-  }
 }, {
   timestamps: true
 })

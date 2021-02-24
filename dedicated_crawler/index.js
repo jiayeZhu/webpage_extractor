@@ -5,7 +5,7 @@ const amqp = require('amqplib')
 const config = require('config')
 const Validator = require('validatorjs')
 
-console.log(process.env)
+// console.log(process.env)
 const mq_host = process.env.MQ_HOST || config.get('RabbitMQ').host
 const mq_port = process.env.MQ_PORT || config.get('RabbitMQ').port
 const queueName = process.env.MQ_QUEUE_NAME || config.get('RabbitMQ').queueName
@@ -48,16 +48,15 @@ const handleMSG = async ({ recordId, url, rules }) => {
   let crawlerResult = new Array(rules.length)
   let promises = []
   promises.push(new Promise(async (resolve, reject) => {
-    let title = (await CrawlerService.retrieveBySelector(url, ['head>title']))['head>title'][0]
     try {
+      let title = (await CrawlerService.retrieveBySelector(url, ['head>title']))['head>title'][0]
       await RecordModel.findByIdAndUpdate(recordId, { title })
       resolve()
     } catch (error) {
-      RecordModel.findByIdAndUpdate(recordId, { status:3 }).catch(console.error) // 3 means internal error
-      // console.error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`)
-      reject(new Error(`failed to modify record: ${recordId} title to ${title}. with error: ${error.message}`))
+      RecordModel.findByIdAndUpdate(recordId, { status: 3 }).catch(console.error) // 3 means internal error
+      reject(new Error(`failed to modify record: ${recordId} title. with error: ${error.message}`))
     }
-    
+
   }))
   rules.forEach(async (rule, idx) => {
     let p = new Promise(async (resolve, reject) => {
@@ -69,12 +68,16 @@ const handleMSG = async ({ recordId, url, rules }) => {
         } catch (error) {
           console.error(`failed to modify record: ${recordId} status to 4. with error: ${error.message}`)
         }
-        resolve()
+        reject()
       } else {
         let [crawlerFn, option] = parseResult
-        if (option !== undefined) crawlerResult[idx] = await crawlerFn(url, option)
-        else crawlerResult[idx] = await crawlerFn(url)
-        resolve()
+        try {
+          if (option !== undefined) crawlerResult[idx] = await crawlerFn(url, option)
+          else crawlerResult[idx] = await crawlerFn(url)
+          resolve()
+        } catch (error) {
+          reject()
+        }
       }
     })
     promises.push(p)
@@ -82,8 +85,10 @@ const handleMSG = async ({ recordId, url, rules }) => {
 
   try {
     // update results to db
-    await Promise.all(promises)
-    await RecordModel.findByIdAndUpdate(recordId, { status: 2, result: crawlerResult })
+    let results = await Promise.allSettled(promises)
+    let passed = results.filter(r => r.status == 'rejected').length == 0
+    if (passed) await RecordModel.findByIdAndUpdate(recordId, { status: 2, result: crawlerResult })
+    else await RecordModel.findOneAndUpdate({_id:recordId, status:1}, { status: 3, result: crawlerResult })
     return true
   } catch (error) {
     console.error(`failed to update results of record: ${recordId} with error: ${error.message}`)

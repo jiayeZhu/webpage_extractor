@@ -53,7 +53,7 @@ const start = () => {
     
     try {
       // update results to db
-      await Promise.all(promises)
+      await Promise.allSettled(promises)
       await RecordModel.findByIdAndUpdate(recordId, { status: 2, result: crawlerResult })
     } catch (error) {
       console.error(`failed to update results of record: ${recordId} with error: ${error.message}`)

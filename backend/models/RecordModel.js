@@ -26,16 +26,6 @@ const RecordSchema = new Schema({
     default: 0
   },
 
-  // extractor pid
-  // pid: {type: Number},
-
-  // record deleted or not
-  deleted: {
-    type: Boolean,
-    default: false,
-    required: true
-  },
-
   // which task this record belongs to
   belongto: {
     type: ObjectId,
