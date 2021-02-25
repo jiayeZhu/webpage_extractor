@@ -6,11 +6,11 @@ A full-stack web application that allows a user to extract data from webpages on
 ## standalone mode
 
 1. run a MongoDB container
-```
+```bash
 docker run --name some-mongo -p 49153:27017 -d mongo
 ```
 2. make a ENV configuration file like this
-```
+```bash
 master.env
 ----------
 DB_HOST=IP_ADDRESS # do not use something like 127.0.0.1 or localhost
@@ -20,7 +20,7 @@ STANDALONE_MODE=true
 ```
 
 3. run the app
-```
+```bash
 docker run --name standalone-master --env-file master.env -p 3000:3000 -d jayzhu/web-crawler-master
 ```
 
@@ -29,15 +29,15 @@ docker run --name standalone-master --env-file master.env -p 3000:3000 -d jayzhu
 
 ## cluster mode
 1. run a MongoDB container
-```
+```bash
 docker run --name some-mongo -p 49153:27017 -d mongo
 ```
 2. run a RabbitMQ container
-```
+```bash
 docker run -d -p 15672:15672 -p 5672:5672 -e RABBITMQ_NODENAME=my-rabbit --name some-rabbit rabbitmq:management
 ```
 3. make ENV configuration file for master ndoe and worker node
-```
+```bash
 master.env
 ----------
 MQ_HOST=IP_ADDRESS # it should not be something like 127.0.0.1 or localhost
@@ -59,12 +59,12 @@ DB_HOST=IP_ADDRESS # it should not be something like 127.0.0.1 or localhost
 ```
 
 4. run the master
-```
+```bash
 docker run --name cluster-master --env-file master.env -p 3000:3000 -d jayzhu/web-crawler-master
 ```
 
 5. run the dedicated worker as many as you want
-```
+```bash
 docker run --name cluster-worker --env-file worker.env -d jayzhu/web-crawler-worker
 ```
 
