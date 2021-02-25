@@ -7,7 +7,17 @@ const { body, validationResult } = require('express-validator')
 const VALID_RULES = ['COUNT_TAGS', 'RETRIEVE_HEADER', 'RETRIEVE_FOOTER', 'RETRIEVE_BY_ID', 'RETRIEVE_BY_CLASS', 'RETRIEVE_BY_SELECTOR']
 const PAGE_SIZE = 10
 
-// create new extraction task
+/**
+ * @api {post} /task Create new task
+ * @apiName CreateTask
+ * @apiGroup  Task
+ * 
+ * @apiParam {String} name Task name.
+ * @apiParam {Object[]} rules rule objects for the Task
+ * @apiParam {String[]} urls URLs for the task
+ * 
+ * @apiSuccess (201) {String} _id the MongoDB ObjectID of the new created task
+ */
 TaskRouter.post(
   '/',
   body('name').isString().notEmpty(),
@@ -38,6 +48,24 @@ TaskRouter.post(
 
   })
 
+/**
+ * @api {get} /task?page=:page get a list of tasks
+ * @apiName GetTaskList
+ * @apiGroup  Task
+ * 
+ * @apiParam {Number} page which page to show, default = 1
+ * 
+ * @apiSuccess (200) {Object[]} tasks list of tasks
+ * @apiSuccess (200) {String[]} tasks.rules rules of the task
+ * @apiSuccess (200) {String} task._id MongoDB ObjectID of the Task
+ * @apiSuccess (200) {String} task.name Task name
+ * @apiSuccess (200) {Date} task.createdAt the timestamp when the Task was created
+ * @apiSuccess (200) {Object[]} task.records records related to this task
+ * @apiSuccess (200) {Number} task.records.status status of the record
+ * @apiSuccess (200) {String} task.records.url url of the record
+ * @apiSuccess (200) {String} task.records._id MongoDB ObjectID of the record
+ * @apiSuccess (200) {Number} totalCount total count of all tasks
+ */
 TaskRouter.get('/', async (req, res) => {
   let page = parseInt(req.query.page)
   if (isNaN(page) || page < 1) page = 1
@@ -62,6 +90,16 @@ TaskRouter.get('/', async (req, res) => {
   }
 })
 
+/**
+ * @api {delete} /task/:taskId delete a task
+ * @apiName DeleteTask
+ * @apiGroup  Task
+ * 
+ * @apiParam {String} taskId The MongoDB ObjectID of the task you want to delete
+ * 
+ * @apiSuccessExample Success-Response:
+ *   HTTP/1.1 200 OK
+ */
 TaskRouter.delete('/:id', async (req, res) => {
   let { id } = req.params
   try {
@@ -86,6 +124,21 @@ TaskRouter.delete('/:id', async (req, res) => {
   }
 })
 
+/**
+ * @api {get} /task/:taskId/record get the records of a specific task
+ * @apiName GetRecordList
+ * @apiGroup  Task
+ * 
+ * @apiParam {String} taskId The MongoDB ObjectID of the task you want to fetch records of
+ * 
+ * @apiSuccess (200) {Object[]} records List of records related to the specific task
+ * @apiSuccess (200) {Number} records.status Crawler status of the record
+ * @apiSuccess (200) {String} records.url The url of the record
+ * @apiSuccess (200) {String} records._id MongoDB ObjectID of the record
+ * @apiSuccess (200) {String} records.title The title of the url
+ * @apiSuccess (200) {Number} totalCount total count of all records related to the task
+ * 
+ */
 TaskRouter.get('/:taskId/record', async(req,res)=>{
   let page = parseInt(req.query.page)
   if (isNaN(page) || page < 1) page = 1
